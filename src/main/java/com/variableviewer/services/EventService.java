@@ -1,7 +1,8 @@
-package com.variableviewer;
+package com.variableviewer.services;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Function;
 import lombok.val;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
@@ -17,7 +18,7 @@ public class EventService
 		this.eventBus = eventBus;
 	}
 
-	public <T> Observable<T> OnEvent( final Class<T> eventClass )
+	public <T> Observable<T> onEvent( final Class<T> eventClass )
 	{
 		return Observable.create( observer ->
 		{
@@ -27,14 +28,24 @@ public class EventService
 		} );
 	}
 
-	public <T extends Config> Observable<ConfigChanged> OnConfigChanged( final T config )
+	public <T extends Config> Observable<ConfigChanged> onConfigChanged( final T config )
 	{
 		final var configGroup = config.getClass()
 			.getInterfaces()[0]
 			.getAnnotation( ConfigGroup.class )
 			.value();
 
-		return OnEvent( ConfigChanged.class )
+		return onEvent( ConfigChanged.class )
 			.filter( event -> event.getGroup().equals( configGroup ) );
+	}
+
+	public <T extends Config, U> Observable<U> onConfigChanged(
+		final T config,
+		final String configKey,
+		final Function<T, U> selector )
+	{
+		return onConfigChanged( config )
+			.filter( event -> event.getKey().equals( configKey ) )
+			.map( event -> selector.apply( config ) );
 	}
 }

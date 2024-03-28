@@ -1,19 +1,17 @@
-package com.variableviewer;
+package com.variableviewer.ui.panel;
 
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
-import lombok.val;
-import net.runelite.api.Varbits;
 
 import javax.swing.*;
 
-public class RecentPanel
+public class WatchPanel
 	extends JPanel
 	implements Disposable
 {
 	private final CompositeDisposable disposable;
 
-	public RecentPanel()
+	public WatchPanel()
 	{
 		disposable = new CompositeDisposable();
 	}
