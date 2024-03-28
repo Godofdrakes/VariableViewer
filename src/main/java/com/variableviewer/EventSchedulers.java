@@ -4,6 +4,8 @@ import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import net.runelite.client.callback.ClientThread;
 
+import javax.swing.*;
+
 /**
  * Creates Rx scheduler objects for use in RuneLite plugins
  */
@@ -11,11 +13,10 @@ public class EventSchedulers
 {
 	public EventSchedulers( ClientThread clientThread )
 	{
-		this.ClientThread = Schedulers.from( clientThread::invoke );
+		this.Client = Schedulers.from( clientThread::invoke );
+		this.Swing = Schedulers.from( SwingUtilities::invokeLater );
 	}
 
-	/**
-	 * Scheduler representing the "main" thread
-	 */
-	public final Scheduler ClientThread;
+	public final Scheduler Client;
+	public final Scheduler Swing;
 }

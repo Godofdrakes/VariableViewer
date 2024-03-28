@@ -27,9 +27,10 @@ public class EventService
 		} );
 	}
 
-	public Observable<ConfigChanged> OnConfigChanged( final Config config )
+	public <T extends Config> Observable<ConfigChanged> OnConfigChanged( final T config )
 	{
 		final var configGroup = config.getClass()
+			.getInterfaces()[0]
 			.getAnnotation( ConfigGroup.class )
 			.value();
 

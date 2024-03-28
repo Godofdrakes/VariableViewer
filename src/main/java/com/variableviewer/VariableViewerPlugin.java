@@ -46,7 +46,7 @@ public class VariableViewerPlugin extends Plugin
 	private EventService eventService;
 
 	@Inject
-	private Provider<WatchPanel> watchPanelProvider;
+	private Provider<VariableViewerPanel> watchPanelProvider;
 
 	@Inject
 	@Named("developerMode")
@@ -59,7 +59,7 @@ public class VariableViewerPlugin extends Plugin
 		{
 			disposable.add(
 				eventService.OnConfigChanged( config )
-					.observeOn( schedulers.ClientThread )
+					.observeOn( schedulers.Client )
 					.subscribe( event -> log
 						.debug( "Config changed! {}.{}", event.getGroup(), event.getKey() ) )
 			);
