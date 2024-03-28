@@ -4,6 +4,7 @@ import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.variableviewer.services.EventService;
 import com.variableviewer.services.RxPlugin;
+import com.variableviewer.services.VarbitNameService;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.extern.slf4j.Slf4j;
@@ -92,5 +93,11 @@ public class VariableViewerPlugin extends Plugin
 	EventService provideEvents( EventBus eventBus )
 	{
 		return new EventService( eventBus );
+	}
+	
+	@Provides
+	VarbitNameService provideNameService()
+	{
+		return new VarbitNameService();
 	}
 }
