@@ -1,10 +1,13 @@
 package com.variableviewer.ui.panel;
 
+import com.variableviewer.services.EventService;
 import com.variableviewer.services.RxPlugin;
+import com.variableviewer.services.VarbitNames;
 import com.variableviewer.ui.EvictingListModel;
-import io.reactivex.rxjava3.core.Observable;
+import com.variableviewer.ui.RecentChangeGroup;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.runelite.api.events.VarbitChanged;
@@ -12,8 +15,6 @@ import net.runelite.api.events.VarbitChanged;
 import javax.inject.Inject;
 import javax.swing.*;
 import java.awt.*;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class RecentChangePanel
@@ -23,28 +24,25 @@ public class RecentChangePanel
 	private final CompositeDisposable disposable;
 
 	@Inject
-	public RecentChangePanel()
+	public RecentChangePanel( @NonNull final EventService eventService )
 	{
 		disposable = new CompositeDisposable();
 
-		val random = new Random();
+		val listModel = new EvictingListModel<VarbitChanged>( 100 );
 
-		val listModel = new EvictingListModel<VarbitChanged>( 10 );
-
-		disposable.add( Observable
-			.interval( 5, TimeUnit.SECONDS, RxPlugin.swingScheduler() )
-			.map( l ->
-			{
-				val event = new VarbitChanged();
-				event.setVarbitId( l.intValue() );
-				event.setValue( random.nextInt() );
-				return event;
-			} )
+		disposable.add( eventService
+			.onEvent( VarbitChanged.class )
+			.filter( event -> event.getVarbitId() != -1 )
+			.observeOn( RxPlugin.uiScheduler() )
 			.subscribe( listModel::add ) );
 
 		val list = new JList<>( listModel );
 
 		list.setCellRenderer( new CellRenderer() );
+
+		val foo = new RecentChangeGroup( 42, "Meaning Of Life" );
+
+		this.add( foo );
 
 		this.add( list );
 	}
@@ -71,7 +69,10 @@ public class RecentChangePanel
 			boolean isSelected,
 			boolean cellHasFocus )
 		{
-			return new JTextArea( String.format( "%d changed to %d", value.getVarbitId(), value.getValue() ) );
+			val varbitName = VarbitNames.get( value.getVarbitId() );
+			val varbitValue = value.getValue();
+			val label = String.format( "%s changed to %d", varbitName, varbitValue );
+			return new JTextArea( label );
 		}
 	}
 }

@@ -9,15 +9,25 @@ import javax.swing.*;
 /**
  * Creates Rx scheduler objects for use in RuneLite plugins
  */
-public class RxPlugin
+public final class RxPlugin
 {
-	public static Scheduler swingScheduler()
+	public static Scheduler uiScheduler()
 	{
 		return Schedulers.from( SwingUtilities::invokeLater );
 	}
 
-	public static Scheduler clientScheduler( ClientThread clientThread )
+	public static Scheduler mainScheduler( ClientThread clientThread )
 	{
 		return Schedulers.from( clientThread::invokeLater );
+	}
+
+	public static Scheduler backgroundScheduler()
+	{
+		return Schedulers.computation();
+	}
+
+	private RxPlugin()
+	{
+
 	}
 }

@@ -2,9 +2,10 @@ package com.variableviewer;
 
 import com.google.inject.Provider;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.variableviewer.services.EventService;
 import com.variableviewer.services.RxPlugin;
-import com.variableviewer.services.VarbitNameService;
+import com.variableviewer.services.VarbitNames;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +56,7 @@ public class VariableViewerPlugin extends Plugin
 		{
 			disposable.add(
 				eventService.onConfigChanged( config )
-					.observeOn( RxPlugin.clientScheduler( clientThread ) )
+					.observeOn( RxPlugin.mainScheduler( clientThread ) )
 					.subscribe( event -> log
 						.debug( "Config changed! {}.{}", event.getGroup(), event.getKey() ) )
 			);
@@ -84,20 +85,16 @@ public class VariableViewerPlugin extends Plugin
 	}
 
 	@Provides
-	VariableViewerConfig provideConfig( ConfigManager configManager )
+	@Singleton
+	static VariableViewerConfig provideConfig( ConfigManager configManager )
 	{
 		return configManager.getConfig( VariableViewerConfig.class );
 	}
 
 	@Provides
-	EventService provideEvents( EventBus eventBus )
+	@Singleton
+	static EventService provideEvents( EventBus eventBus, ClientThread clientThread )
 	{
-		return new EventService( eventBus );
-	}
-	
-	@Provides
-	VarbitNameService provideNameService()
-	{
-		return new VarbitNameService();
+		return new EventService( eventBus, clientThread );
 	}
 }

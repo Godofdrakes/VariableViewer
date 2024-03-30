@@ -1,9 +1,11 @@
 package com.variableviewer;
 
+import com.google.inject.Provider;
 import com.variableviewer.ui.panel.RecentChangePanel;
 import com.variableviewer.ui.panel.WatchPanel;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import lombok.NonNull;
 import lombok.val;
 import net.runelite.client.ui.PluginPanel;
 
@@ -17,22 +19,24 @@ public class VariableViewerPanel
 	private final CompositeDisposable disposable;
 
 	@Inject
-	public VariableViewerPanel()
+	public VariableViewerPanel(
+		@NonNull final Provider<RecentChangePanel> changePanelProvider,
+		@NonNull final Provider<WatchPanel> watchPanelProvider )
 	{
 		disposable = new CompositeDisposable();
 
-		val watchPanel = new WatchPanel();
-
-		disposable.add( watchPanel );
-
-		val recentPanel = new RecentChangePanel();
+		val recentPanel = changePanelProvider.get();
 
 		disposable.add( recentPanel );
 
+		val watchPanel = watchPanelProvider.get();
+
+		disposable.add( watchPanel );
+
 		val tabPane = new JTabbedPane();
 
-		tabPane.add( "Watch", watchPanel );
 		tabPane.add( "Recent", recentPanel );
+		tabPane.add( "Watch", watchPanel );
 
 		this.add( tabPane );
 	}
