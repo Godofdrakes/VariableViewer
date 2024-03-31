@@ -3,8 +3,12 @@ package com.variableviewer.services;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Function;
+import io.reactivex.rxjava3.functions.Predicate;
 import lombok.NonNull;
 import lombok.val;
+import net.runelite.api.Client;
+import net.runelite.api.events.ClientTick;
+import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
@@ -13,7 +17,7 @@ import net.runelite.client.events.ConfigChanged;
 
 import javax.inject.Inject;
 
-public class EventService
+public final class EventService
 {
 	private final EventBus eventBus;
 	private final ClientThread clientThread;
@@ -40,7 +44,27 @@ public class EventService
 			.subscribeOn( RxPlugin.mainScheduler( clientThread ) );
 	}
 
-	public <T extends Config> Observable<ConfigChanged> onConfigChanged( final T config )
+	public Observable<VarbitChanged> onVarbitChanged()
+	{
+		return onEvent( VarbitChanged.class );
+	}
+
+	public Observable<Integer> onVarbitChanged( final int varbitId )
+	{
+		return onEvent( VarbitChanged.class )
+			.filter( event -> event.getVarbitId() == varbitId )
+			.map( VarbitChanged::getValue );
+	}
+
+	public Observable<Integer> onVarpChanged( final int varpId )
+	{
+		return onEvent( VarbitChanged.class )
+			.filter( event -> event.getVarpId() == varpId )
+			.map( VarbitChanged::getValue );
+	}
+
+	public <T extends Config> Observable<ConfigChanged> onConfigChanged(
+		@NonNull final T config )
 	{
 		final var configGroup = config.getClass()
 			.getInterfaces()[0]
@@ -52,12 +76,19 @@ public class EventService
 	}
 
 	public <T extends Config, U> Observable<U> onConfigChanged(
-		final T config,
-		final String configKey,
-		final Function<T, U> selector )
+		@NonNull final T config,
+		@NonNull final String configKey,
+		@NonNull final Function<T, U> selector )
 	{
 		return onConfigChanged( config )
 			.filter( event -> event.getKey().equals( configKey ) )
 			.map( event -> selector.apply( config ) );
+	}
+
+	public Observable<Integer> onClientTick(
+		@NonNull final Client client )
+	{
+		return onEvent( ClientTick.class )
+			.map( event -> client.getTickCount() );
 	}
 }

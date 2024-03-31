@@ -6,6 +6,8 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.NonNull;
 
 import javax.swing.*;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 public class EvictingListModel<T>
 	extends AbstractListModel<T>
@@ -13,20 +15,32 @@ public class EvictingListModel<T>
 {
 	private final CompositeDisposable disposable;
 
-	private final EvictingQueue<T> items;
+	private final Queue<T> queue;
 
-	public EvictingListModel( int bufferSize )
+	private final int maxSize;
+
+	public EvictingListModel( final int maxSize )
 	{
-		disposable = new CompositeDisposable();
+		if ( maxSize < 1 )
+		{
+			throw new IllegalArgumentException( "maxSize must be at least 1" );
+		}
 
-		items = EvictingQueue.create( bufferSize );
+		this.disposable = new CompositeDisposable();
+		this.queue = new ArrayDeque<>( maxSize );
+		this.maxSize = maxSize;
 	}
 
 	public EvictingListModel<T> add( @NonNull final T item )
 	{
-		items.add( item );
+		while ( queue.size() >= maxSize )
+		{
+			queue.remove();
+		}
 
-		fireContentsChanged( this, 0, items.size() );
+		queue.add( item );
+
+		fireContentsChanged( this, 0, queue.size() );
 
 		return this;
 	}
@@ -34,14 +48,14 @@ public class EvictingListModel<T>
 	@Override
 	public int getSize()
 	{
-		return items.size();
+		return queue.size();
 	}
 
 	@Override
 	public T getElementAt( int index )
 	{
 		// This is slow and bad but whatever it's fine for now
-		return items.stream()
+		return queue.stream()
 			.skip( index )
 			.findFirst()
 			.orElse( null );

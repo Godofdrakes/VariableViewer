@@ -1,4 +1,4 @@
-package com.variableviewer.services;
+package com.variableviewer;
 
 import lombok.NonNull;
 import lombok.val;
@@ -27,9 +27,7 @@ public final class VarbitNames
 
 			try
 			{
-				val varbitId = field.getInt( null );
-				val varbitName = field.getName();
-				map.put( varbitId, varbitName );
+				map.put( field.getInt( null ), field.getName() );
 			}
 			catch ( Throwable e )
 			{

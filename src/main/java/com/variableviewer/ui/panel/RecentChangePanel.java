@@ -2,15 +2,13 @@ package com.variableviewer.ui.panel;
 
 import com.variableviewer.services.EventService;
 import com.variableviewer.services.RxPlugin;
-import com.variableviewer.services.VarbitNames;
-import com.variableviewer.ui.EvictingListModel;
 import com.variableviewer.ui.RecentChangeGroup;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.Client;
 
 import javax.inject.Inject;
 import javax.swing.*;
@@ -21,30 +19,45 @@ public class RecentChangePanel
 	extends JPanel
 	implements Disposable
 {
+	private final int maxSize = 100;
 	private final CompositeDisposable disposable;
 
 	@Inject
-	public RecentChangePanel( @NonNull final EventService eventService )
+	public RecentChangePanel(
+		@NonNull final Client client,
+		@NonNull final EventService eventService )
 	{
 		disposable = new CompositeDisposable();
 
-		val listModel = new EvictingListModel<VarbitChanged>( 100 );
+		var listPanel = new JPanel( new BorderLayout() );
+
+		listPanel.setPreferredSize( new Dimension( Integer.MAX_VALUE, 0 ) );
+
+		var scrollPanel = new JScrollPane(
+			listPanel,
+			ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS );
+
+		this.add( scrollPanel );
 
 		disposable.add( eventService
-			.onEvent( VarbitChanged.class )
+			// On any varbit change
+			.onVarbitChanged()
 			.filter( event -> event.getVarbitId() != -1 )
+			// Batch changes by tick
+			.window( eventService.onClientTick( client ) )
+			// For each batch
+			.concatMapMaybe( batch -> batch.toList()
+				// Skip empty batches
+				.filter( items -> !items.isEmpty() )
+				// Create a change group item
+				.map( items -> new RecentChangeGroup( client.getTickCount(), items ) )
+			)
+			// On the UI thread
 			.observeOn( RxPlugin.uiScheduler() )
-			.subscribe( listModel::add ) );
-
-		val list = new JList<>( listModel );
-
-		list.setCellRenderer( new CellRenderer() );
-
-		val foo = new RecentChangeGroup( 42, "Meaning Of Life" );
-
-		this.add( foo );
-
-		this.add( list );
+			// Add to list
+			.subscribe( group -> listPanel.add( group, BorderLayout.CENTER ) )
+		);
 	}
 
 	@Override
@@ -57,22 +70,5 @@ public class RecentChangePanel
 	public boolean isDisposed()
 	{
 		return disposable.isDisposed();
-	}
-
-	private static class CellRenderer implements ListCellRenderer<VarbitChanged>
-	{
-		@Override
-		public Component getListCellRendererComponent(
-			JList<? extends VarbitChanged> list,
-			VarbitChanged value,
-			int index,
-			boolean isSelected,
-			boolean cellHasFocus )
-		{
-			val varbitName = VarbitNames.get( value.getVarbitId() );
-			val varbitValue = value.getValue();
-			val label = String.format( "%s changed to %d", varbitName, varbitValue );
-			return new JTextArea( label );
-		}
 	}
 }
